@@ -9,11 +9,20 @@ function createBubbleChart(error, countries, continentNames) {
   var continentColorScale = d3.scaleOrdinal(d3.schemeCategory10)
         .domain(continents.values());
 
-  var width = 1200,
-      height = 800;
+    function getWindowDimensions() {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      return {
+        width: width,
+        height: height,
+      };
+    }
+
+  var width = getWindowDimensions().width,
+      height = getWindowDimensions().height - 100;
   var svg,
       circles,
-      circleSize = { min: 10, max: 50 };
+      circleSize = { min: 10, med: 30, max: 50 };
   var circleRadiusScale = d3.scaleSqrt()
     .domain(populationExtent)
     .range([circleSize.min, circleSize.max]);
@@ -126,22 +135,44 @@ function createBubbleChart(error, countries, continentNames) {
             console.log("Clicked circle:", clickedCircle)
             const curradius = Number(clickedCircle.attr("r"))
             function getNewRadius(newradius) {
+                if (curradius == circleSize.max) {
+                    return {
+                        radius: circleSize.min,
+                        population: 10000
+                    }
+                } else
+                if (curradius == circleSize.min) {
+                     return {
+                        radius: circleSize.max,
+                        population: 100000
+                     }
+                } else
+                if (curradius == circleSize.med) {
+                     return {
+                        radius: circleSize.max,
+                        population: 100000
+                     }
+                } else
                 if (newradius > circleSize.max) {
-                    return circleSize.max
+                    return {
+                        radius: circleSize.max,
+                        population: 100000
+                    }
                 } else {
-                    return newradius
+                    return {
+                        radius: circleSize.min,
+                        population: 10000
+                    }
                 }
             }
             const newradius = getNewRadius(curradius + circleSize.max / 20)
-            clickedCircle.attr("r", newradius.toString())
+            clickedCircle.attr("r", newradius.radius.toString())
             console.log(JSON.stringify(event))
-            if (newradius !== curradius) {
-                const newpop = Number(event.Population) + 5100
-                event.Population = newpop
-            }
+            event.Population = newradius.population
             createForceSimulation()
+            updateCircles()
         })
-        updateCircles();
+            updateCircles()
 
     function updateCountryInfo(country) {
       var info = "";
@@ -386,5 +417,9 @@ function createBubbleChart(error, countries, continentNames) {
       }
     }
   }
-
+  return {
+    updateCircles: function () {
+       updateCircles();
+    }
+  }
 }
