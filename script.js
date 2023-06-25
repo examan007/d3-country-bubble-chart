@@ -17,12 +17,23 @@ function createBubbleChart(error, countries, continentNames) {
         height: height,
       };
     }
-
   var width = getWindowDimensions().width,
       height = getWindowDimensions().height - 100;
+    function getCircleSizes() {
+        if (height < 600) {
+            return { min: 10, med: 25, max: 50 }
+        } else
+        if (height < 800) {
+            return { min: 20, med: 50, max: 100 };
+        } else {
+            return { min: 30, med: 75, max: 133 };
+        }
+    }
+
   var svg,
       circles,
-      circleSize = { min: 10, med: 30, max: 50 };
+      circleSize = getCircleSizes()
+//      circleSize = { min: 10, med: 25, max: 50 };
   var circleRadiusScale = d3.scaleSqrt()
     .domain(populationExtent)
     .range([circleSize.min, circleSize.max]);
@@ -47,10 +58,11 @@ function createBubbleChart(error, countries, continentNames) {
   }
 
   function toggleContinentKey(showContinentKey) {
-    var keyElementWidth = 150,
-        keyElementHeight = 30;
+    var keyElementWidth = Number(getWindowDimensions().width) / continents.values().length,
+        keyElementHeight = keyElementWidth / 5;
     var onScreenYOffset = keyElementHeight*1.5,
         offScreenYOffset = 100;
+    var keyElementSize = (keyElementWidth / 8)  + "px"
 
     if (d3.select(".continent-key").empty()) {
       createContinentKey();
@@ -88,6 +100,7 @@ function createBubbleChart(error, countries, continentNames) {
       d3.selectAll("g.continent-key-element")
         .append("text")
           .attr("text-anchor", "middle")
+          .attr("font-size", keyElementSize)
           .attr("x", function(d) { return continentKeyScale(d) + keyElementWidth/2; })
           .text(function(d) { return continentNames[d]; });
 
@@ -142,10 +155,10 @@ function createBubbleChart(error, countries, continentNames) {
                     }
                 } else
                 if (curradius == circleSize.min) {
-                     return {
-                        radius: circleSize.max,
-                        population: 100000
-                     }
+                    return {
+                        radius: circleSize.med,
+                        population: 33000
+                    }
                 } else
                 if (curradius == circleSize.med) {
                      return {
@@ -159,9 +172,10 @@ function createBubbleChart(error, countries, continentNames) {
                         population: 100000
                     }
                 } else {
+                    console.log("Current radius [" + curradius + "]")
                     return {
-                        radius: circleSize.min,
-                        population: 10000
+                        radius: circleSize.max,
+                        population: 100000
                     }
                 }
             }
@@ -172,7 +186,7 @@ function createBubbleChart(error, countries, continentNames) {
             createForceSimulation()
             updateCircles()
         })
-            updateCircles()
+        updateCircles()
 
     function updateCountryInfo(country) {
       var info = "";
@@ -231,6 +245,7 @@ function createBubbleChart(error, countries, continentNames) {
       };
 
       function continentForceX(d) {
+        console.log("ForceX: executing ...")
         if (d.ContinentCode === "EU") {
           return left(width);
         } else if (d.ContinentCode === "AF") {
