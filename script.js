@@ -13,7 +13,7 @@ function createBubbleChart(error, countries, continentNames) {
       height = 800;
   var svg,
       circles,
-      circleSize = { min: 10, max: 80 };
+      circleSize = { min: 10, max: 50 };
   var circleRadiusScale = d3.scaleSqrt()
     .domain(populationExtent)
     .range([circleSize.min, circleSize.max]);
@@ -120,8 +120,28 @@ function createBubbleChart(error, countries, continentNames) {
         })
         .on("mouseout", function(d) {
           updateCountryInfo();
-        });
-    updateCircles();
+        })
+        .on("click", function(event, d) {
+            const clickedCircle = d3.select(this);
+            console.log("Clicked circle:", clickedCircle)
+            const curradius = Number(clickedCircle.attr("r"))
+            function getNewRadius(newradius) {
+                if (newradius > circleSize.max) {
+                    return circleSize.max
+                } else {
+                    return newradius
+                }
+            }
+            const newradius = getNewRadius(curradius + circleSize.max / 20)
+            clickedCircle.attr("r", newradius.toString())
+            console.log(JSON.stringify(event))
+            if (newradius !== curradius) {
+                const newpop = Number(event.Population) + 5100
+                event.Population = newpop
+            }
+            createForceSimulation()
+        })
+        updateCircles();
 
     function updateCountryInfo(country) {
       var info = "";
