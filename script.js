@@ -58,7 +58,14 @@ function createBubbleChart(error, countries, continentNames) {
   }
 
   function toggleContinentKey(showContinentKey) {
-    var keyElementWidth = Number(getWindowDimensions().width) / continents.values().length,
+    function getKeyWidth() {
+        const width = getWindowDimensions().width
+        if (width > 500) {
+            return 500
+        }
+        return width
+    }
+    var keyElementWidth = getKeyWidth() / continents.values().length,
         keyElementHeight = keyElementWidth / 5;
     var onScreenYOffset = keyElementHeight*1.5,
         offScreenYOffset = 100;
@@ -76,6 +83,7 @@ function createBubbleChart(error, countries, continentNames) {
     }
 
     function createContinentKey() {
+
       var keyWidth = keyElementWidth * continents.values().length;
       var continentKeyScale = d3.scaleBand()
         .domain(continents.values())
