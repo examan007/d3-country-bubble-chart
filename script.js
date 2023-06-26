@@ -31,7 +31,6 @@ function createBubbleChart(error, countries, continentNames) {
     }
 
   var svg,
-      circles,
       circleSize = getCircleSizes()
 //      circleSize = { min: 10, med: 25, max: 50 };
   var circleRadiusScale = d3.scaleSqrt()
@@ -83,7 +82,6 @@ function createBubbleChart(error, countries, continentNames) {
     }
 
     function createContinentKey() {
-
       var keyWidth = keyElementWidth * continents.values().length;
       var continentKeyScale = d3.scaleBand()
         .domain(continents.values())
@@ -140,12 +138,21 @@ function createBubbleChart(error, countries, continentNames) {
 
   function createCircles() {
     var formatPopulation = d3.format(",");
-    circles = svg.selectAll("circle")
+    const circles = svg.selectAll(".neod3group")
       .data(countries)
+
+    const group = circles
       .enter()
+        .append("g")
+        .attr("class", "neod3group")
+//        .attr("transform", function(d){return "translate("+d.x+",80)"})
+
+
+    const circle = group
         .append("circle")
         .attr("r", function(d) { return circleRadiusScale(d.Population); })
-        .on("mouseover", function(d) {
+        .attr("class", "neod3circle")
+       .on("mouseover", function(d) {
           updateCountryInfo(d);
         })
         .on("mouseout", function(d) {
@@ -194,6 +201,14 @@ function createBubbleChart(error, countries, continentNames) {
             createForceSimulation()
             updateCircles()
         })
+
+        group.append("text")
+                .style("display", "none")
+                .attr("class", "label")
+                .attr("dx", function(d){return -20})
+                .text(function(d){return d.CountryName})
+                .attr('alignment-baseline', 'middle')
+
         updateCircles()
 
     function updateCountryInfo(country) {
@@ -205,13 +220,46 @@ function createBubbleChart(error, countries, continentNames) {
     }
   }
 
-  function updateCircles() {
-    circles
-      .attr("fill", function(d) {
+  function updateCirclesReal(display) {
+    svg.selectAll(".neod3group").each(function () {
+      const group = d3.select(this)
+      const circle = group.select("circle").attr("fill", function(d) {
+        console.log(JSON.stringify(this))
         return flagFill() ? "url(#" + d.CountryCode + ")" : continentColorScale(d.ContinentCode);
-      });
+      })
+      const r = +circle.attr("r")
+      const x = +circle.attr("cx");
+      const y = +circle.attr("cy");
+      console.log("x:", x);
+      console.log("y:", y);
+      console.log("r:", r);
+      console.log("r:", getCircleSizes().med);
+      const text = group.select("text")
+     if (r == getCircleSizes().max) {
+        const fontsize = getCircleSizes().max / 2
+        text.style("font-size", fontsize.toString() + "px")
+        .attr("x", x - getCircleSizes().med )
+        .attr("y", y)
+        .style("display", display)
+     } else
+     if (r > getCircleSizes().min) {
+        const fontsize = getCircleSizes().med / 4
+        text.style("font-size", fontsize.toString() + "px")
+        .attr("x", x - getCircleSizes().med / 4)
+        .attr("y", y)
+        .style("display", display)
+      } else {
+        text
+        .style("display", "none")
+      }
+    })
   }
-
+  function updateCircles() {
+    updateCirclesReal("none")
+    window.setTimeout((()=> {
+        updateCirclesReal("block")
+    }), 3000)
+  }
   function createForces() {
     var forceStrength = 0.05;
 
@@ -319,7 +367,7 @@ function createBubbleChart(error, countries, continentNames) {
       .force("collide", d3.forceCollide(forceCollide));
     forceSimulation.nodes(countries)
       .on("tick", function() {
-        circles
+        svg.selectAll(".neod3circle")
           .attr("cx", function(d) { return d.x; })
           .attr("cy", function(d) { return d.y; });
       });
