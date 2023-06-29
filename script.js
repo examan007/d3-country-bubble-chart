@@ -135,90 +135,117 @@ function createBubbleChart(error, countries, continentNames) {
   function isChecked(elementID) {
     return d3.select(elementID).property("checked");
   }
-
+  function minimizeAllCircles() {
+        svg.selectAll("circle")
+        .attr("r", function (d) {
+            console.log(JSON.stringify(d))
+            d.Population = 10000
+            return circleSize.min
+        })
+        createForceSimulation()
+        updateCircles()
+  }
+  function processClickCircle(d, clickedCircle) {
+        const curradius = Number(clickedCircle.attr("r"))
+        minimizeAllCircles()
+        function getNewRadius(newradius) {
+            if (curradius == circleSize.max) {
+                return {
+                    radius: circleSize.min,
+                    population: 10000
+                }
+            } else
+            if (curradius == circleSize.min) {
+                return {
+                    radius: circleSize.med,
+                    population: 33000
+                }
+            } else
+            if (curradius == circleSize.med) {
+                 return {
+                    radius: circleSize.max,
+                    population: 100000
+                 }
+            } else
+            if (newradius > circleSize.max) {
+                return {
+                    radius: circleSize.max,
+                    population: 100000
+                }
+            } else {
+                console.log("Current radius [" + curradius + "]")
+                return {
+                    radius: circleSize.max,
+                    population: 100000
+                }
+            }
+        }
+        const newradius = getNewRadius(curradius + circleSize.max / 20)
+        clickedCircle.attr("r", newradius.radius.toString())
+        console.log(JSON.stringify(d))
+        d.Population = newradius.population
+        createForceSimulation()
+        updateCircles()
+    }
   function createCircles() {
     var formatPopulation = d3.format(",");
-    const circles = svg.selectAll(".neod3group")
+    const circlegroups = svg.selectAll(".neod3group")
       .data(countries)
 
-    const group = circles
+    const group = circlegroups
       .enter()
         .append("g")
         .attr("class", "neod3group")
-//        .attr("transform", function(d){return "translate("+d.x+",80)"})
-
-
-    const circle = group
-        .append("circle")
-        .attr("r", function(d) { return circleRadiusScale(d.Population); })
-        .attr("class", "neod3circle")
        .on("mouseover", function(d) {
           updateCountryInfo(d);
         })
         .on("mouseout", function(d) {
           updateCountryInfo();
         })
-        .on("click", function(event, d) {
-            const clickedCircle = d3.select(this);
-            console.log("Clicked circle:", clickedCircle)
-            const curradius = Number(clickedCircle.attr("r"))
-            function getNewRadius(newradius) {
-                if (curradius == circleSize.max) {
-                    return {
-                        radius: circleSize.min,
-                        population: 10000
-                    }
-                } else
-                if (curradius == circleSize.min) {
-                    return {
-                        radius: circleSize.med,
-                        population: 33000
-                    }
-                } else
-                if (curradius == circleSize.med) {
-                     return {
-                        radius: circleSize.max,
-                        population: 100000
-                     }
-                } else
-                if (newradius > circleSize.max) {
-                    return {
-                        radius: circleSize.max,
-                        population: 100000
-                    }
-                } else {
-                    console.log("Current radius [" + curradius + "]")
-                    return {
-                        radius: circleSize.max,
-                        population: 100000
-                    }
-                }
-            }
-            const newradius = getNewRadius(curradius + circleSize.max / 20)
-            clickedCircle.attr("r", newradius.radius.toString())
-            console.log(JSON.stringify(event))
-            event.Population = newradius.population
-            createForceSimulation()
-            updateCircles()
+        .on("click", function (d) {
+           const group = d3.select(this);
+           processClickCircle(d, group.select("circle"))
         })
 
-        group.append("text")
+
+    const circle = group
+        .append("circle")
+        .attr("r", function(d) { return circleRadiusScale(d.Population); })
+        .attr("class", "neod3circle")
+
+        function addText(index) {
+            var exitflag = true
+            group.append("text")
                 .style("display", "none")
                 .attr("class", "label")
-                .attr("dx", function(d){return -20})
-                .text(function(d){return d.CountryName})
-                .attr('alignment-baseline', 'middle')
+                .text(function (d) {
+                    const text = d.CountryName.split(/ |\//)[index]
+                   console.log("CountryName=[" + text + "] index=[" + index + "]")
+                   if (typeof(text) === 'undefined') {
+                        return ""
+                    } else {
+                        exitflag = false
+                        return text
+                    }
 
+                })
+                .attr('alignment-baseline', 'middle')
+            if (!exitflag) {
+                addText(index + 1)
+            }
+        }
+        addText(0)
         updateCircles()
+  }
 
     function updateCountryInfo(country) {
       var info = "";
       if (country) {
-        info = [country.CountryName, formatPopulation(country.Population)].join(": ");
+        //info = [country.CountryName, formatPopulation(country.Population)].join(": ");
+        info = country.CountryName
+          d3.select("#country-info").html(info);
       }
-      d3.select("#country-info").html(info);
     }
-  }
 
   function updateCirclesReal(display) {
     svg.selectAll(".neod3group").each(function () {
@@ -234,31 +261,58 @@ function createBubbleChart(error, countries, continentNames) {
       console.log("y:", y);
       console.log("r:", r);
       console.log("r:", getCircleSizes().med);
-      const text = group.select("text")
-     if (r == getCircleSizes().max) {
-        const fontsize = getCircleSizes().max / 2
-        text.style("font-size", fontsize.toString() + "px")
-        .attr("x", x - getCircleSizes().med )
-        .attr("y", y)
-        .style("display", display)
-     } else
-     if (r > getCircleSizes().min) {
-        const fontsize = getCircleSizes().med / 4
-        text.style("font-size", fontsize.toString() + "px")
-        .attr("x", x - getCircleSizes().med / 4)
-        .attr("y", y)
-        .style("display", display)
-      } else {
-        text
-        .style("display", "none")
-      }
+      group.selectAll("text").each(function (element, i) {
+         console.log("element=[" + JSON.stringify(element) + "]")
+         const text = d3.select(this)
+         if (r == getCircleSizes().max) {
+            function getMaxFontSize() {
+                if (element.ContinentCode === "AF") {
+                    return getCircleSizes().max / 2
+                } else {
+                    return getCircleSizes().max / 4
+                }
+            }
+            function getYOffset() {
+                if (element.ContinentCode === "AF") {
+                    return y + (i - 0.5) * fontsize
+                } else {
+                    return y + (i - 1) * fontsize
+                }
+            }
+            const fontsize = getMaxFontSize()
+            text.style("font-size", fontsize.toString() + "px")
+            .attr("x", x - getCircleSizes().max / 1.5 )
+            .attr("y", getYOffset())
+            .style("display", display)
+            .style("font-family", "Copperplate Gothic, sans-serif")
+            .style("color", "white")
+            updateCountryInfo(element)
+         } else
+         if (r > getCircleSizes().min) {
+            const fontsize = getCircleSizes().med / 4
+            text.style("font-size", fontsize.toString() + "px")
+            .attr("x", x - getCircleSizes().med / 2)
+            .attr("y", y + (i - 1) * fontsize)
+            .style("display", display)
+         } else {
+            text
+            .style("display", "none")
+         }
+      })
     })
   }
+
   function updateCircles() {
     updateCirclesReal("none")
-    window.setTimeout((()=> {
-        updateCirclesReal("block")
-    }), 3000)
+    function adjustText(index) {
+        if (index < 50) {
+            window.setTimeout((()=> {
+                updateCirclesReal("block")
+                adjustText(index + 1)
+            }), 100)
+        }
+    }
+    window.setTimeout(()=> { adjustText(0) }, 2000)
   }
   function createForces() {
     var forceStrength = 0.05;
